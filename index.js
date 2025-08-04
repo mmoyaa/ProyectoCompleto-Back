@@ -40,6 +40,7 @@ const cors = require("cors");
 const getRoutes = require('./routes/getRoutes');
 const postRoutes = require('./routes/postRoutes');
 const expireRoutes = require('./routes/expireRoutes');
+const setupRoutes = require('./routes/setupRoutes');
 
 const app = express();
 const PORT = 3000;
@@ -51,6 +52,7 @@ app.use(express.json());
 app.use('/api', getRoutes);      // Rutas GET
 app.use('/api', postRoutes);     // Rutas POST
 app.use('/api', expireRoutes);   // Rutas de expirar
+app.use('/api', setupRoutes);    // Rutas de configuración/setup
 
 // Inicio del servidor
 app.listen(PORT, () => {

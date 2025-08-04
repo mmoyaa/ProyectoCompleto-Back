@@ -210,7 +210,7 @@ router.get('/pacientes', async (req, res) => {
   }
 });
 
-// GET - Obtener todos los pacientes con información completa de tutores
+// GET - Obtener todos los pacientes con información completa de tutores y representantes
 router.get('/pacientes/con-info-tutor', async (req, res) => {
   try {
     const pool = await poolPromise;
@@ -227,6 +227,7 @@ router.get('/pacientes/con-info-tutor', async (req, res) => {
         p.nacionalidad,
         p.tutor,
         p.idTutor,
+        p.idRepresentante,
         p.fechaCreacion,
         p.fechaModificacion,
         CASE 
@@ -236,15 +237,28 @@ router.get('/pacientes/con-info-tutor', async (req, res) => {
         END AS nombreTutor,
         t.correo AS correoTutor,
         t.telefono AS telefonoTutor,
-        t.direccion AS direccionTutor
+        t.direccion AS direccionTutor,
+        CASE 
+          WHEN p.idRepresentante IS NOT NULL THEN 
+            CONCAT(r.nombre, ' ', r.apellido)
+          ELSE 'Sin representante'
+        END AS nombreRepresentante,
+        r.rut AS rutRepresentante,
+        r.correo AS correoRepresentante,
+        r.telefono AS telefonoRepresentante,
+        r.direccion AS direccionRepresentante,
+        r.nacionalidad AS nacionalidadRepresentante,
+        pr.relacion AS relacionRepresentante
       FROM paciente p
       LEFT JOIN tutores t ON p.idTutor = t.idTutor
+      LEFT JOIN representantes r ON p.idRepresentante = r.idRepresentante
+      LEFT JOIN paciente_representante pr ON p.idPaciente = pr.idPaciente AND pr.activo = 1
       ORDER BY p.fechaCreacion DESC
     `);
     res.json(result.recordset);
   } catch (error) {
-    console.error('Error al obtener pacientes con información de tutor:', error);
-    res.status(500).json({ error: 'Error al obtener la lista de pacientes con información de tutor' });
+    console.error('Error al obtener pacientes con información completa:', error);
+    res.status(500).json({ error: 'Error al obtener la lista de pacientes con información completa' });
   }
 });
 

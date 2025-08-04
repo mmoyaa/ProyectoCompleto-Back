@@ -459,4 +459,277 @@ router.post('/pacientes/:idPaciente/asignar-tutor', async (req, res) => {
   }
 });
 
+// POST - Crear paciente con representante
+router.post('/pacientes/con-representante', async (req, res) => {
+  try {
+    console.log('Datos recibidos para paciente con representante:', req.body);
+    
+    const {
+      // Datos del paciente
+      nombre,
+      apellidoPaterno,
+      apellidoMaterno,
+      rut,
+      telefono,
+      correo,
+      direccion,
+      nacionalidad = 'Chilena',
+      // Datos del representante
+      nombreRepresentante,
+      apellidoRepresentante,
+      rutRepresentante,
+      telefonoRepresentante,
+      correoRepresentante,
+      direccionRepresentante,
+      relacionRepresentante,
+      nacionalidadRepresentante = 'Chilena'
+    } = req.body;
+
+    // Validaciones básicas del paciente
+    if (!nombre || nombre.trim() === '') {
+      return res.status(400).json({ 
+        error: 'El campo nombre del paciente es obligatorio' 
+      });
+    }
+
+    if (!apellidoPaterno || apellidoPaterno.trim() === '') {
+      return res.status(400).json({ 
+        error: 'El campo apellido paterno del paciente es obligatorio' 
+      });
+    }
+
+    if (!rut || rut.trim() === '') {
+      return res.status(400).json({ 
+        error: 'El campo RUT del paciente es obligatorio' 
+      });
+    }
+
+    // Validaciones básicas del representante
+    if (!nombreRepresentante || nombreRepresentante.trim() === '') {
+      return res.status(400).json({ 
+        error: 'El campo nombre del representante es obligatorio' 
+      });
+    }
+
+    if (!apellidoRepresentante || apellidoRepresentante.trim() === '') {
+      return res.status(400).json({ 
+        error: 'El campo apellido del representante es obligatorio' 
+      });
+    }
+
+    if (!rutRepresentante || rutRepresentante.trim() === '') {
+      return res.status(400).json({ 
+        error: 'El campo RUT del representante es obligatorio' 
+      });
+    }
+
+    if (!relacionRepresentante || relacionRepresentante.trim() === '') {
+      return res.status(400).json({ 
+        error: 'El campo relación del representante es obligatorio' 
+      });
+    }
+
+    // Validación de formato de RUT para paciente y representante
+    const rutRegex = /^\d{7,8}-[\dkK]$/;
+    if (!rutRegex.test(rut.trim())) {
+      return res.status(400).json({ 
+        error: 'El formato del RUT del paciente debe ser: 12345678-9 o 1234567-K' 
+      });
+    }
+
+    if (!rutRegex.test(rutRepresentante.trim())) {
+      return res.status(400).json({ 
+        error: 'El formato del RUT del representante debe ser: 12345678-9 o 1234567-K' 
+      });
+    }
+
+    const pool = await poolPromise;
+
+    // Verificar si el RUT del paciente ya existe
+    const existeRutPaciente = await pool.request()
+      .input('rut', sql.NVarChar(12), rut.trim())
+      .query('SELECT COUNT(*) as cantidad FROM paciente WHERE rut = @rut');
+
+    if (existeRutPaciente.recordset[0].cantidad > 0) {
+      return res.status(409).json({ error: 'Ya existe un paciente con este RUT' });
+    }
+
+    // Verificar si el RUT del representante ya existe en la tabla de representantes
+    const existeRutRepresentante = await pool.request()
+      .input('rutRepresentante', sql.NVarChar(12), rutRepresentante.trim())
+      .query('SELECT idRepresentante FROM representantes WHERE rut = @rutRepresentante');
+
+    let idRepresentante;
+
+    // Iniciar transacción
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    try {
+      // Si el representante ya existe, usar su ID, sino crear uno nuevo
+      if (existeRutRepresentante.recordset.length > 0) {
+        idRepresentante = existeRutRepresentante.recordset[0].idRepresentante;
+        console.log('Representante existente encontrado con ID:', idRepresentante);
+      } else {
+        // Crear nuevo representante
+        const representanteResult = await transaction.request()
+          .input('nombreRepresentante', sql.NVarChar(100), nombreRepresentante.trim())
+          .input('apellidoRepresentante', sql.NVarChar(100), apellidoRepresentante.trim())
+          .input('rutRepresentante', sql.NVarChar(12), rutRepresentante.trim())
+          .input('telefonoRepresentante', sql.NVarChar(20), telefonoRepresentante ? telefonoRepresentante.trim() : null)
+          .input('correoRepresentante', sql.NVarChar(150), correoRepresentante ? correoRepresentante.trim() : null)
+          .input('direccionRepresentante', sql.NVarChar(255), direccionRepresentante ? direccionRepresentante.trim() : null)
+          .input('nacionalidadRepresentante', sql.NVarChar(50), nacionalidadRepresentante.trim())
+          .query(`
+            INSERT INTO representantes (nombre, apellido, rut, telefono, correo, direccion, nacionalidad)
+            OUTPUT INSERTED.idRepresentante
+            VALUES (@nombreRepresentante, @apellidoRepresentante, @rutRepresentante, @telefonoRepresentante, @correoRepresentante, @direccionRepresentante, @nacionalidadRepresentante)
+          `);
+
+        idRepresentante = representanteResult.recordset[0].idRepresentante;
+        console.log('Nuevo representante creado con ID:', idRepresentante);
+      }
+
+      // Crear paciente con representante
+      const pacienteResult = await transaction.request()
+        .input('nombre', sql.NVarChar(100), nombre.trim())
+        .input('apellidoPaterno', sql.NVarChar(100), apellidoPaterno.trim())
+        .input('apellidoMaterno', sql.NVarChar(100), apellidoMaterno ? apellidoMaterno.trim() : null)
+        .input('rut', sql.NVarChar(12), rut.trim())
+        .input('telefono', sql.NVarChar(20), telefono ? telefono.trim() : null)
+        .input('correo', sql.NVarChar(150), correo ? correo.trim() : null)
+        .input('direccion', sql.NVarChar(255), direccion ? direccion.trim() : null)
+        .input('nacionalidad', sql.NVarChar(50), nacionalidad.trim())
+        .input('idRepresentante', sql.Int, idRepresentante)
+        .query(`
+          INSERT INTO paciente (nombre, apellidoPaterno, apellidoMaterno, rut, telefono, correo, direccion, nacionalidad, tutor, idTutor, idRepresentante)
+          OUTPUT INSERTED.idPaciente
+          VALUES (@nombre, @apellidoPaterno, @apellidoMaterno, @rut, @telefono, @correo, @direccion, @nacionalidad, 0, NULL, @idRepresentante)
+        `);
+
+      const idPaciente = pacienteResult.recordset[0].idPaciente;
+
+      // Crear relación paciente-representante
+      await transaction.request()
+        .input('idPaciente', sql.Int, idPaciente)
+        .input('idRepresentante', sql.Int, idRepresentante)
+        .input('relacion', sql.NVarChar(50), relacionRepresentante.trim())
+        .query(`
+          INSERT INTO paciente_representante (idPaciente, idRepresentante, relacion, fechaAsignacion)
+          VALUES (@idPaciente, @idRepresentante, @relacion, GETDATE())
+        `);
+
+      await transaction.commit();
+
+      res.status(201).json({
+        message: 'Paciente y representante creados correctamente',
+        idPaciente: idPaciente,
+        idRepresentante: idRepresentante,
+        relacion: relacionRepresentante.trim()
+      });
+
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error detallado al crear paciente con representante:', error);
+    
+    // Manejo de errores específicos de SQL Server
+    if (error.number) {
+      switch (error.number) {
+        case 2627: // Violación de restricción única
+          return res.status(409).json({ error: 'Ya existe un paciente o representante con estos datos' });
+        case 515: // No puede insertar NULL
+          return res.status(400).json({ error: 'Faltan campos obligatorios' });
+        case 547: // Violación de restricción de clave foránea
+          return res.status(400).json({ error: 'Error en las relaciones de datos' });
+        default:
+          return res.status(500).json({ 
+            error: 'Error de base de datos', 
+            details: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
+          });
+      }
+    }
+    
+    res.status(500).json({ 
+      error: 'Error al crear el paciente con representante',
+      details: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
+    });
+  }
+});
+
+// POST - Crear solo representante
+router.post('/representantes', async (req, res) => {
+  try {
+    const {
+      nombre,
+      apellido,
+      rut,
+      telefono,
+      correo,
+      direccion,
+      nacionalidad = 'Chilena'
+    } = req.body;
+
+    // Validaciones básicas
+    if (!nombre || !apellido || !rut) {
+      return res.status(400).json({ 
+        error: 'Los campos nombre, apellido y RUT son obligatorios' 
+      });
+    }
+
+    // Validación de formato de RUT
+    const rutRegex = /^\d{7,8}-[\dkK]$/;
+    if (!rutRegex.test(rut.trim())) {
+      return res.status(400).json({ 
+        error: 'El formato del RUT debe ser: 12345678-9 o 1234567-K' 
+      });
+    }
+
+    const pool = await poolPromise;
+
+    // Verificar si el RUT ya existe
+    const existeRut = await pool.request()
+      .input('rut', sql.NVarChar(12), rut.trim())
+      .query('SELECT COUNT(*) as cantidad FROM representantes WHERE rut = @rut');
+
+    if (existeRut.recordset[0].cantidad > 0) {
+      return res.status(409).json({ error: 'Ya existe un representante con este RUT' });
+    }
+
+    const result = await pool.request()
+      .input('nombre', sql.NVarChar(100), nombre.trim())
+      .input('apellido', sql.NVarChar(100), apellido.trim())
+      .input('rut', sql.NVarChar(12), rut.trim())
+      .input('telefono', sql.NVarChar(20), telefono ? telefono.trim() : null)
+      .input('correo', sql.NVarChar(150), correo ? correo.trim() : null)
+      .input('direccion', sql.NVarChar(255), direccion ? direccion.trim() : null)
+      .input('nacionalidad', sql.NVarChar(50), nacionalidad.trim())
+      .query(`
+        INSERT INTO representantes (nombre, apellido, rut, telefono, correo, direccion, nacionalidad)
+        OUTPUT INSERTED.idRepresentante
+        VALUES (@nombre, @apellido, @rut, @telefono, @correo, @direccion, @nacionalidad)
+      `);
+
+    res.status(201).json({
+      message: 'Representante creado correctamente',
+      idRepresentante: result.recordset[0].idRepresentante
+    });
+
+  } catch (error) {
+    console.error('Error al crear representante:', error);
+    
+    if (error.number === 2627) {
+      return res.status(409).json({ error: 'Ya existe un representante con este RUT' });
+    }
+    
+    res.status(500).json({ 
+      error: 'Error al crear el representante',
+      details: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
+    });
+  }
+});
+
 module.exports = router;

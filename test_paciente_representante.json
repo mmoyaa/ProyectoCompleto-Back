@@ -1,0 +1,18 @@
+{
+  "nombre": "Ana",
+  "apellidoPaterno": "Rodriguez",
+  "apellidoMaterno": "Martinez",
+  "rut": "98765432-1",
+  "telefono": "+56987654321",
+  "correo": "ana.rodriguez@email.com",
+  "direccion": "Av. Secundaria 456",
+  "nacionalidad": "Chilena",
+  "nombreRepresentante": "Carlos",
+  "apellidoRepresentante": "Rodriguez",
+  "rutRepresentante": "22222222-2",
+  "telefonoRepresentante": "+56922222222",
+  "correoRepresentante": "carlos.rodriguez@email.com",
+  "direccionRepresentante": "Av. Secundaria 456",
+  "relacionRepresentante": "Padre",
+  "nacionalidadRepresentante": "Chilena"
+}
