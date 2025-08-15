@@ -23,12 +23,16 @@ const sql = require('mssql');
 
 
 const config = {
+  server: 'localhost',
+  database: 'NuevoCCMM',
   user: 'ccmm_user',
   password: 'CcmmSegura123!',
-  server: 'localhost',           // o tu IP/nombre de servidor
-  database: 'NuevoCCMM',
+  port: 1433,
+  authentication: {
+    type: 'default'
+  },
   options: {
-    encrypt: false,              // true si estás usando Azure
+    encrypt: false,
     trustServerCertificate: true
   }
 };

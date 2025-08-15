@@ -41,6 +41,7 @@ const getRoutes = require('./routes/getRoutes');
 const postRoutes = require('./routes/postRoutes');
 const expireRoutes = require('./routes/expireRoutes');
 const setupRoutes = require('./routes/setupRoutes');
+const evaluacionesRoutes = require('./routes/evaluacionesRoutes');
 
 const app = express();
 const PORT = 3000;
@@ -49,10 +50,11 @@ app.use(cors());
 app.use(express.json());
 
 // Usar las rutas organizadas
-app.use('/api', getRoutes);      // Rutas GET
-app.use('/api', postRoutes);     // Rutas POST
-app.use('/api', expireRoutes);   // Rutas de expirar
-app.use('/api', setupRoutes);    // Rutas de configuración/setup
+app.use('/api', getRoutes);           // Rutas GET
+app.use('/api', postRoutes);          // Rutas POST
+app.use('/api', expireRoutes);        // Rutas de expirar
+app.use('/api', setupRoutes);         // Rutas de configuración/setup
+app.use('/api', evaluacionesRoutes);  // Rutas de evaluaciones sensoriales
 
 // Inicio del servidor
 app.listen(PORT, () => {
