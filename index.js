@@ -42,6 +42,7 @@ const postRoutes = require('./routes/postRoutes');
 const expireRoutes = require('./routes/expireRoutes');
 const setupRoutes = require('./routes/setupRoutes');
 const evaluacionesRoutes = require('./routes/evaluacionesRoutes');
+const documentosRoutes = require('./routes/documentosRoutes'); // Nueva ruta para documentos
 
 const app = express();
 const PORT = 3000;
@@ -55,6 +56,7 @@ app.use('/api', postRoutes);          // Rutas POST
 app.use('/api', expireRoutes);        // Rutas de expirar
 app.use('/api', setupRoutes);         // Rutas de configuración/setup
 app.use('/api', evaluacionesRoutes);  // Rutas de evaluaciones sensoriales
+app.use('/api', documentosRoutes);    // Rutas de gestión de documentos
 
 // Inicio del servidor
 app.listen(PORT, () => {
