@@ -33,6 +33,8 @@
 //   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 // });
 
+require('dotenv').config();
+
 const express = require("express");
 const cors = require("cors");
 
@@ -45,7 +47,7 @@ const evaluacionesRoutes = require('./routes/evaluacionesRoutes');
 const documentosRoutes = require('./routes/documentosRoutes'); // Nueva ruta para documentos
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());

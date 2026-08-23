@@ -1,8 +1,0 @@
-/*! @azure/msal-browser v4.11.1 2025-04-29 */
-'use strict';
-/* eslint-disable header/header */
-const name = "@azure/msal-browser";
-const version = "4.11.1";
-
-export { name, version };
-//# sourceMappingURL=packageMetadata.mjs.map

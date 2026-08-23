@@ -1,41 +1,20 @@
-
-
 const sql = require('mssql');
 
-// const config = {
-//   server: 'localhost',
-//   database: 'NuevoCCMM',
-//   user: 'ccmm_user',
-//   password: 'CcmmSegura123!',
-//   port: 1433,
-//   authentication: {
-//     type: 'default'
-//   },
-//   options: {
-//     encrypt: false,
-//     trustServerCertificate: true
-//   }
-// };
-
-
-
-
-
-
 const config = {
-  server: 'localhost',
-  database: 'NuevoCCMM',
-  user: 'ccmm_user',
-  password: 'CcmmSegura123!',
-  port: 1433,
+  server: process.env.DB_SERVER || 'localhost',
+  database: process.env.DB_NAME || 'NuevoCCMM',
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  port: Number(process.env.DB_PORT) || 1433,
   authentication: {
     type: 'default'
   },
   options: {
-    encrypt: false,
-    trustServerCertificate: true
+    encrypt: process.env.DB_ENCRYPT !== 'false',
+    trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE !== 'false'
   }
 };
+
 const poolPromise = new sql.ConnectionPool(config)
   .connect()
   .then(pool => {
@@ -49,9 +28,3 @@ const poolPromise = new sql.ConnectionPool(config)
 module.exports = {
   sql, poolPromise
 };
-
-
-
-
-
-// -------------------------------------------------------
